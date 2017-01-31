@@ -80,7 +80,7 @@ type PipelineInstance struct {
 	Stages       []Stage    `json:"stages,omitempty"`
 	Counter      int        `json:"counter,omitempty"`
 	ID           int        `json:"id,omitempty"`
-	label        string     `json:"label,omitempty"`
+	Label        string     `json:"label,omitempty"`
 	BuildCause   BuildCause `json:"build_cause,omitempty"`
 }
 

@@ -305,13 +305,37 @@ func (p *Client) DeleteEnvironment(env *Environment) error {
 	return nil
 }
 
-func (p *Client) UnpausePipeline(resource string) error {
+func (p *Client) UnpausePipeline(name string) error {
 	if resp, err := p.goCDRequest("POST",
-		fmt.Sprintf("%s/unpause", p.host),
+		fmt.Sprintf("%s/go/api/pipelines/%s/unpause", p.host, name),
 		[]byte{},
 		map[string]string{"Confirm": "true"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
+		return p.createError(resp)
+	}
+	return nil
+}
+
+func (p *Client) PausePipeline(name string) error {
+	if resp, err := p.goCDRequest("POST",
+		fmt.Sprintf("%s/go/api/pipelines/%s/pause", p.host, name),
+		[]byte{'p', 'a', 'u', 's', 'e', 'C', 'a', 'u', 's', 'e', '=', 't', 'a', 'k', 'e', ' ', 's', 'o', 'm', 'e', ' ', 'r', 'e', 's', 't'},
+		map[string]string{"Confirm": "true"}); err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return p.createError(resp)
+	}
+	return nil
+}
+
+func (p *Client) SchedulePipeline(name string, data []byte) error {
+	if resp, err := p.goCDRequest("POST",
+		fmt.Sprintf("%s/go/api/pipelines/%s/schedule", p.host, name),
+		data,
+		map[string]string{"Confirm": "true"}); err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusAccepted {
 		return p.createError(resp)
 	}
 	return nil
