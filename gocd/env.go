@@ -63,3 +63,15 @@ type Environments struct {
 		Environments []Environment `json:"environments"`
 	} `json:"_embedded"`
 }
+
+type Version struct {
+	Links struct {
+		Self Link `json:"self"`
+		Doc  Link `json:"doc"`
+	} `json:"_links"`
+	Version     string `json:"version"`
+	BuildNumber string `json:"build_number"`
+	GitSha      string `json:"git_sha"`
+	FullVersion string `json:"full_version"`
+	CommitUrl   string `json:"commit_url"`
+}

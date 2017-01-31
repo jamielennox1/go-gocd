@@ -26,16 +26,30 @@ func main() {
 	//}
 
 	//if env, err := client.GetEnvironment("DEV"); err == nil {
-	//	fmt.Println(env)
-	//	client.SetEnvironment(env)
+	//	//fmt.Println(env)
+	//	env.Name = "TEST_BROFORCE"
+	//	env.EnvironmentVariables = []gocd.EnvironmentVariable{}
+	//	env.Agents = env.Agents[:1]
+	//	env.Pipelines = env.Pipelines[:1]
+	//	if err := client.NewEnvironment(env); err == nil {
+	//		//client.DeleteEnvironment(env)
+	//	} else {
+	//		fmt.Println(err)
+	//	}
 	//} else {
 	//	fmt.Println(err)
 	//}
 
-	if p, err := client.GetPipelineConfig("broforce"); err == nil {
-		fmt.Println(p)
+	if v, err := client.Version(); err == nil {
+		fmt.Println(v)
 	} else {
 		fmt.Println(err)
 	}
+
+	//if p, err := client.GetPipelineConfig("broforce"); err == nil {
+	//	fmt.Println(p)
+	//} else {
+	//	fmt.Println(err)
+	//}
 
 }
