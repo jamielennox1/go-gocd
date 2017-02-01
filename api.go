@@ -13,7 +13,7 @@ type Client struct {
 	host     string
 	login    string
 	password string
-	ETag     string
+	Etag     string
 }
 
 func New(host, login, password string) *Client {
@@ -122,7 +122,7 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 	if err := p.unmarshal(resp.Body, &pipeline); err != nil {
 		return nil, err
 	} else {
-		p.ETag = resp.Header.Get("ETag")
+		p.Etag = resp.Header.Get("Etag")
 		return &pipeline, nil
 	}
 }
@@ -156,7 +156,7 @@ func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 	if resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, pipeline.Name),
 		body,
-		map[string]string{"If-Match": p.ETag,
+		map[string]string{"If-Match": p.Etag,
 			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
@@ -206,7 +206,7 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 	if err := p.unmarshal(resp.Body, &envs); err != nil {
 		return nil, err
 	} else {
-		p.ETag = resp.Header.Get("ETag")
+		p.Etag = resp.Header.Get("Etag")
 		return &envs, nil
 	}
 }
@@ -226,7 +226,7 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 	if err := p.unmarshal(resp.Body, &env); err != nil {
 		return nil, err
 	} else {
-		p.ETag = resp.Header.Get("ETag")
+		p.Etag = resp.Header.Get("Etag")
 		return &env, nil
 	}
 }
@@ -287,7 +287,7 @@ func (p *Client) SetEnvironment(env *Environment) error {
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
 		body,
 		map[string]string{
-			"If-Match": p.ETag,
+			"If-Match": p.Etag,
 			"Accept":   "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
@@ -300,7 +300,7 @@ func (p *Client) DeleteEnvironment(name string) error {
 	if resp, err := p.goCDRequest("DELETE",
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, name),
 		[]byte{},
-		map[string]string{"If-Match": p.ETag,
+		map[string]string{"If-Match": p.Etag,
 			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {

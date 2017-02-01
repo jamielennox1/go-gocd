@@ -30,7 +30,7 @@ func TestClient_GetEnvironment(t *testing.T) {
 			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
 			return
 		}
-		w.Header().Set("ETag", "123456789")
+		w.Header().Set("Etag", "123456789")
 		w.Write(data)
 	}))
 	defer server.Close()
@@ -59,7 +59,7 @@ func TestClient_GetEnvironments(t *testing.T) {
 			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
 			return
 		}
-		w.Header().Set("ETag", "123456789")
+		w.Header().Set("Etag", "123456789")
 		w.Write(data)
 	}))
 	defer server.Close()
@@ -189,7 +189,7 @@ func TestClient_GetGroups(t *testing.T) {
 			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
 			return
 		}
-		w.Header().Set("ETag", "123456789")
+		w.Header().Set("Etag", "123456789")
 		w.Write(data)
 	}))
 	defer server.Close()
