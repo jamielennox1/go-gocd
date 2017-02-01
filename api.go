@@ -122,7 +122,9 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 	if err := p.unmarshal(resp.Body, &pipeline); err != nil {
 		return nil, err
 	} else {
-		p.Etag = resp.Header.Get("Etag")
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.Etag = tag[0]
+		}
 		return &pipeline, nil
 	}
 }
@@ -206,7 +208,9 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 	if err := p.unmarshal(resp.Body, &envs); err != nil {
 		return nil, err
 	} else {
-		p.Etag = resp.Header.Get("Etag")
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.Etag = tag[0]
+		}
 		return &envs, nil
 	}
 }
@@ -226,7 +230,9 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 	if err := p.unmarshal(resp.Body, &env); err != nil {
 		return nil, err
 	} else {
-		p.Etag = resp.Header.Get("Etag")
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.Etag = tag[0]
+		}
 		return &env, nil
 	}
 }
