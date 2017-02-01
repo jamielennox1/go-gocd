@@ -15,44 +15,24 @@ func createPath(path string) string {
 	return fmt.Sprintf("./test_data/%s.json", path)
 }
 
-func getEnvironmentHandler(w http.ResponseWriter, r *http.Request) {
-	if strings.Compare(r.Method, "GET") != 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNoContent)
-		fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
-		return
-	}
-	data, err := ioutil.ReadFile(createPath("get_environment"))
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNoContent)
-		fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
-		return
-	}
-	w.Header().Set("ETag", "123456789")
-	w.Write(data)
-}
-
-func getEnvironmentsHandler(w http.ResponseWriter, r *http.Request) {
-	if strings.Compare(r.Method, "GET") != 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNoContent)
-		fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
-		return
-	}
-	data, err := ioutil.ReadFile(createPath("get_environments"))
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNoContent)
-		fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
-		return
-	}
-	w.Header().Set("ETag", "123456789")
-	w.Write(data)
-}
-
 func TestClient_GetEnvironment(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(getEnvironmentHandler))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_environment"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Header().Set("ETag", "123456789")
+		w.Write(data)
+	}))
 	defer server.Close()
 
 	client := New(server.URL, "", "")
@@ -65,7 +45,23 @@ func TestClient_GetEnvironment(t *testing.T) {
 }
 
 func TestClient_GetEnvironments(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(getEnvironmentsHandler))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_environments"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Header().Set("ETag", "123456789")
+		w.Write(data)
+	}))
 	defer server.Close()
 
 	client := New(server.URL, "", "")
@@ -81,5 +77,128 @@ func TestClient_GetEnvironments(t *testing.T) {
 			assert.Equal(t, len(env.Pipelines), 1)
 			break
 		}
+	}
+}
+
+func TestClient_PausePipeline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "POST") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != POST"}`, r.Method))
+			return
+		}
+		if strings.Compare(r.Header.Get("Confirm"), "true") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, fmt.Sprint(`{"Error":"header Confirm != true"}`))
+			return
+		}
+		defer r.Body.Close()
+		if body, err := ioutil.ReadAll(r.Body); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		} else if strings.Compare(string(body), "pauseCause=take some rest") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"Body %s != pauseCause=take some rest"}`, body))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if err := client.PausePipeline("pipeline"); err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+}
+
+func TestClient_UnpausePipeline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "POST") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != POST"}`, r.Method))
+			return
+		}
+		if strings.Compare(r.Header.Get("Confirm"), "true") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, fmt.Sprint(`{"Error":"header Confirm != true"}`))
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if err := client.UnpausePipeline("pipeline"); err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+}
+
+func TestClient_SchedulePipeline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "POST") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != POST"}`, r.Method))
+			return
+		}
+		if strings.Compare(r.Header.Get("Confirm"), "true") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, fmt.Sprint(`{"Error":"header Confirm != true"}`))
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, "Request to schedule pipeline pipeline accepted")
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if err := client.SchedulePipeline("pipeline", []byte{}); err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+}
+
+func TestClient_GetGroups(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+
+		data, err := ioutil.ReadFile(createPath("get_groups"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Header().Set("ETag", "123456789")
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if grps, err := client.GetGroups(); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.Equal(t, len(*grps), 2)
 	}
 }

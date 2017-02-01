@@ -25,6 +25,9 @@ func (p *Client) unmarshal(data io.ReadCloser, v interface{}) error {
 	if body, err := ioutil.ReadAll(data); err != nil {
 		return err
 	} else {
+
+		//fmt.Println(string(body))
+
 		return json.Unmarshal(body, v)
 	}
 }
@@ -340,4 +343,40 @@ func (p *Client) SchedulePipeline(name string, data []byte) error {
 		return p.createError(resp)
 	}
 	return nil
+}
+
+func (p *Client) GetGroups() (*[]Group, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/config/pipeline_groups", p.host),
+		[]byte{},
+		map[string]string{})
+	if err != nil {
+		return nil, err
+	} else if resp.StatusCode != http.StatusOK {
+		return nil, p.createError(resp)
+	}
+
+	groups := []Group{}
+	if err := p.unmarshal(resp.Body, &groups); err != nil {
+		return nil, err
+	} else {
+		return &groups, nil
+	}
+}
+
+func (p *Client) FindPipelineConfig(name string) (*PipelineConfig, *Environment, error) {
+	pipeline, err := p.GetPipelineConfig(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	envs, err := p.GetEnvironments()
+	if err != nil {
+		return pipeline, nil, err
+	}
+	for _, env := range envs.Embeded.Environments {
+		if env.ExistPipeline(name) {
+			return pipeline, &env, nil
+		}
+	}
+	return pipeline, nil, nil
 }
