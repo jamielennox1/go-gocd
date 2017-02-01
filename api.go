@@ -13,7 +13,7 @@ type Client struct {
 	host     string
 	login    string
 	password string
-	ETag     []string
+	ETag     string
 }
 
 func New(host, login, password string) *Client {
@@ -22,13 +22,11 @@ func New(host, login, password string) *Client {
 
 func (p *Client) unmarshal(data io.ReadCloser, v interface{}) error {
 	defer data.Close()
-	body, err := ioutil.ReadAll(data)
-	if err != nil {
+	if body, err := ioutil.ReadAll(data); err != nil {
 		return err
+	} else {
+		return json.Unmarshal(body, v)
 	}
-	fmt.Println(string(body))
-
-	return json.Unmarshal(body, v)
 }
 
 func (p *Client) createError(resp *http.Response) error {
@@ -121,7 +119,7 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 	if err := p.unmarshal(resp.Body, &pipeline); err != nil {
 		return nil, err
 	} else {
-		p.ETag = resp.Header["ETag"]
+		p.ETag = resp.Header.Get("ETag")
 		return &pipeline, nil
 	}
 }
@@ -145,14 +143,9 @@ func (p *Client) NewPipelineConfig(pipeline *PipelineConfig, group string) error
 		return p.createError(resp)
 	}
 	return nil
-
 }
 
 func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
-	if len(p.ETag) == 0 {
-		return fmt.Errorf("ETag is empty")
-	}
-
 	body, err := json.Marshal(pipeline)
 	if err != nil {
 		return err
@@ -160,14 +153,13 @@ func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 	if resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, pipeline.Name),
 		body,
-		map[string]string{"If-Match": p.ETag[0],
+		map[string]string{"If-Match": p.ETag,
 			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
 	}
 	return nil
-
 }
 
 func (p *Client) DeletePipelineConfig(pipeline *PipelineConfig) error {
@@ -179,8 +171,21 @@ func (p *Client) DeletePipelineConfig(pipeline *PipelineConfig) error {
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
 	}
-	return nil
 
+	envs, err := p.GetEnvironments()
+	if err != nil {
+		return err
+	}
+
+	for _, env := range envs.Embeded.Environments {
+		if env.DeletePipeline(pipeline.Name) {
+			if err := p.SetEnvironment(&env); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 func (p *Client) GetEnvironments() (*Environments, error) {
@@ -198,7 +203,7 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 	if err := p.unmarshal(resp.Body, &envs); err != nil {
 		return nil, err
 	} else {
-		p.ETag = resp.Header["ETag"]
+		p.ETag = resp.Header.Get("ETag")
 		return &envs, nil
 	}
 }
@@ -218,47 +223,9 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 	if err := p.unmarshal(resp.Body, &env); err != nil {
 		return nil, err
 	} else {
-		p.ETag = resp.Header["ETag"]
+		p.ETag = resp.Header.Get("ETag")
 		return &env, nil
 	}
-}
-
-func (p *Client) SetEnvironment(env *Environment) error {
-	if len(p.ETag) == 0 {
-		return fmt.Errorf("ETag is empty")
-	}
-
-	data := struct {
-		Name                 string                `json:"name"`
-		Pipelines            []map[string]string   `json:","`
-		Agents               []map[string]string   `json:","`
-		EnvironmentVariables []EnvironmentVariable `json:"environment_variables"`
-	}{Name: env.Name}
-
-	for _, p := range env.Pipelines {
-		data.Pipelines = append(data.Pipelines, map[string]string{"name": p.Name})
-	}
-	for _, a := range env.Agents {
-		data.Agents = append(data.Agents, map[string]string{"uuid": a.Uuid})
-	}
-	data.EnvironmentVariables = env.EnvironmentVariables
-
-	body, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	if resp, err := p.goCDRequest("PUT",
-		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
-		body,
-		map[string]string{
-			"If-Match": p.ETag[0],
-			"Accept":   "application/vnd.go.cd.v1+json"}); err != nil {
-		return err
-	} else if resp.StatusCode != http.StatusOK {
-		return p.createError(resp)
-	}
-	return nil
 }
 
 func (p *Client) NewEnvironment(env *Environment) error {
@@ -292,11 +259,45 @@ func (p *Client) NewEnvironment(env *Environment) error {
 	return nil
 }
 
+func (p *Client) SetEnvironment(env *Environment) error {
+	data := struct {
+		Name                 string                `json:"name"`
+		Pipelines            []map[string]string   `json:","`
+		Agents               []map[string]string   `json:","`
+		EnvironmentVariables []EnvironmentVariable `json:"environment_variables"`
+	}{Name: env.Name}
+
+	for _, p := range env.Pipelines {
+		data.Pipelines = append(data.Pipelines, map[string]string{"name": p.Name})
+	}
+	for _, a := range env.Agents {
+		data.Agents = append(data.Agents, map[string]string{"uuid": a.Uuid})
+	}
+	data.EnvironmentVariables = env.EnvironmentVariables
+
+	body, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	if resp, err := p.goCDRequest("PUT",
+		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
+		body,
+		map[string]string{
+			"If-Match": p.ETag,
+			"Accept":   "application/vnd.go.cd.v1+json"}); err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return p.createError(resp)
+	}
+	return nil
+}
+
 func (p *Client) DeleteEnvironment(env *Environment) error {
 	if resp, err := p.goCDRequest("DELETE",
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
 		[]byte{},
-		map[string]string{"If-Match": p.ETag[0],
+		map[string]string{"If-Match": p.ETag,
 			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {

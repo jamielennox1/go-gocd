@@ -75,7 +75,7 @@ func main() {
   - [x] Delete an environment
 - [ ] Dashboard
   - [ ] Get Dashboard
-- [ ] Pipeline Config
+- [x] Pipeline Config
   - [x] Get pipeline Configuration
   - [x] Edit Pipeline configuration
   - [x] Create Pipeline

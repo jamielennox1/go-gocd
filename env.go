@@ -39,22 +39,34 @@ type Environment struct {
 	Pipelines            []ShortPipeline       `json:"pipelines"`
 }
 
-func (p *Environment) AddPipeline(name string) {
+func (p *Environment) AddPipeline(pipeline string) bool {
 	for _, p := range p.Pipelines {
-		if strings.Compare(p.Name, name) == 0 {
-			return
+		if strings.Compare(p.Name, pipeline) == 0 {
+			return false
 		}
 	}
-	p.Pipelines = append(p.Pipelines, ShortPipeline{Name: name})
+	p.Pipelines = append(p.Pipelines, ShortPipeline{Name: pipeline})
+	return true
 }
 
-func (p *Environment) DeletePipeline(name string) {
-	for i := 0; i < len(p.Pipelines); i++ {
-		if strings.Compare(p.Pipelines[i].Name, name) == 0 {
-			p.Pipelines[i] = p.Pipelines[len(p.Pipelines)-1]
-			p.Pipelines = p.Pipelines[:len(p.Pipelines)-1]
+func (p *Environment) ExistPipeline(pipeline string) bool {
+	for _, p := range p.Pipelines {
+		if strings.Compare(p.Name, pipeline) == 0 {
+			return true
 		}
 	}
+	return false
+}
+
+func (p *Environment) DeletePipeline(pipeline string) bool {
+	for i := 0; i < len(p.Pipelines); i++ {
+		if strings.Compare(p.Pipelines[i].Name, pipeline) == 0 {
+			p.Pipelines[i] = p.Pipelines[len(p.Pipelines)-1]
+			p.Pipelines = p.Pipelines[:len(p.Pipelines)-1]
+			return true
+		}
+	}
+	return false
 }
 
 type Environments struct {

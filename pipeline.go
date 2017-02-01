@@ -1,9 +1,9 @@
 package gocd
 
 type JobStateTransitions struct {
-	//StateChangeTime time.Time `json:"state_change_time,omitempty"`
-	ID    int    `json:"id,omitempty"`
-	State string `json:"state,omitempty"`
+	StateChangeTime int    `json:"state_change_time,omitempty"`
+	ID              int    `json:"id,omitempty"`
+	State           string `json:"state,omitempty"`
 }
 
 type Parameter struct {
@@ -21,10 +21,10 @@ type Material struct {
 type Modification struct {
 	EmailAddress string `json:"email_address,omitempty"`
 	ID           int    `json:"id,omitempty"`
-	//ModifiedTime time.Time `json:"modified_time,omitempty"`
-	UserName string `json:"user_name,omitempty"`
-	Comment  string `json:"comment,omitempty"`
-	Revision string `json:"revision,omitempty"`
+	ModifiedTime int    `json:"modified_time,omitempty"`
+	UserName     string `json:"user_name,omitempty"`
+	Comment      string `json:"comment,omitempty"`
+	Revision     string `json:"revision,omitempty"`
 }
 
 type MaterialRevision struct {
@@ -44,16 +44,16 @@ type Job struct {
 	AgentUUID           string                `json:"agent_uuid,omitempty"`
 	Name                string                `json:"name,omitempty"`
 	JobStateTransitions []JobStateTransitions `json:"job_state_transitions,omitempty"`
-	//ScheduledDate       time.Time             `json:"scheduled_date,omitempty"`
-	OriginalJobID   string `json:"original_job_id,omitempty"`
-	PipelineCounter int    `json:"pipeline_counter,omitempty"`
-	Rerun           bool   `json:"rerun,omitempty"`
-	PipelineName    string `json:"pipeline_name,omitempty"`
-	Result          string `json:"result,omitempty"`
-	State           string `json:"state,omitempty"`
-	ID              int    `json:"id,omitempty"`
-	StageCounter    string `json:"stage_counter,omitempty"`
-	StageName       string `json:"stage_name,omitempty"`
+	ScheduledDate       int                   `json:"scheduled_date,omitempty"`
+	OriginalJobID       string                `json:"original_job_id,omitempty"`
+	PipelineCounter     int                   `json:"pipeline_counter,omitempty"`
+	Rerun               bool                  `json:"rerun,omitempty"`
+	PipelineName        string                `json:"pipeline_name,omitempty"`
+	Result              string                `json:"result,omitempty"`
+	State               string                `json:"state,omitempty"`
+	ID                  int                   `json:"id,omitempty"`
+	StageCounter        string                `json:"stage_counter,omitempty"`
+	StageName           string                `json:"stage_name,omitempty"`
 }
 
 type Stage struct {
