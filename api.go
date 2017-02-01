@@ -165,9 +165,9 @@ func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 	return nil
 }
 
-func (p *Client) DeletePipelineConfig(pipeline *PipelineConfig) error {
+func (p *Client) DeletePipelineConfig(name string) error {
 	if resp, err := p.goCDRequest("DELETE",
-		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, pipeline.Name),
+		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
 		[]byte{},
 		map[string]string{"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
@@ -181,7 +181,7 @@ func (p *Client) DeletePipelineConfig(pipeline *PipelineConfig) error {
 	}
 
 	for _, env := range envs.Embeded.Environments {
-		if env.DeletePipeline(pipeline.Name) {
+		if env.DeletePipeline(name) {
 			if err := p.SetEnvironment(&env); err != nil {
 				return err
 			}
@@ -296,9 +296,9 @@ func (p *Client) SetEnvironment(env *Environment) error {
 	return nil
 }
 
-func (p *Client) DeleteEnvironment(env *Environment) error {
+func (p *Client) DeleteEnvironment(name string) error {
 	if resp, err := p.goCDRequest("DELETE",
-		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
+		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, name),
 		[]byte{},
 		map[string]string{"If-Match": p.ETag,
 			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
