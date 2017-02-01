@@ -233,9 +233,9 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 	if err := p.unmarshal(resp.Body, &envs); err != nil {
 		return nil, err
 	} else {
-		if tag := resp.Header["Etag"]; len(tag) > 0 {
-			p.Etag = tag[0]
-		}
+		//if tag := resp.Header["Etag"]; len(tag) > 0 {
+		//	p.Etag = tag[0]
+		//}
 		return &envs, nil
 	}
 }
