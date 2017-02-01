@@ -150,6 +150,18 @@ func (p *Client) NewPipelineConfig(pipeline *PipelineConfig, group string) error
 	return nil
 }
 
+func (p *Client) NewPipelineConfigRaw(data []byte) error {
+	if resp, err := p.goCDRequest("POST",
+		fmt.Sprintf("%s/go/api/admin/pipelines", p.host),
+		data,
+		map[string]string{"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return p.createError(resp)
+	}
+	return nil
+}
+
 func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 	body, err := json.Marshal(pipeline)
 	if err != nil {
@@ -158,6 +170,19 @@ func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 	if resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, pipeline.Name),
 		body,
+		map[string]string{"If-Match": p.Etag,
+			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return p.createError(resp)
+	}
+	return nil
+}
+
+func (p *Client) SetPipelineConfigRaw(name string, data []byte) error {
+	if resp, err := p.goCDRequest("PUT",
+		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
+		data,
 		map[string]string{"If-Match": p.Etag,
 			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
