@@ -202,3 +202,103 @@ func TestClient_GetGroups(t *testing.T) {
 		assert.Equal(t, len(*grps), 2)
 	}
 }
+
+func TestClient_GetPipelineConfig(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+
+		data, err := ioutil.ReadFile(createPath("get_pipeline_config"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Header().Set("Etag", "123456789")
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if pipeline, err := client.GetPipelineConfig("my_pipeline"); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.Equal(t, pipeline.Name, "my_pipeline")
+	}
+}
+
+//func TestClient_SetPipelineConfig(t *testing.T) {
+//	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//		if strings.Compare(r.Method, "PUT") != 0 {
+//			w.Header().Set("Content-Type", "application/json")
+//			w.WriteHeader(http.StatusMethodNotAllowed)
+//			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != PUT"}`, r.Method))
+//			return
+//		}
+//		data, err := ioutil.ReadFile(createPath("post_pipeline_config"))
+//		if err != nil {
+//			w.Header().Set("Content-Type", "application/json")
+//			w.WriteHeader(http.StatusNoContent)
+//			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+//			return
+//		}
+//		val1 := make(map[string]interface{})
+//		if err := json.Unmarshal(data, &val1); err != nil {
+//			w.Header().Set("Content-Type", "application/json")
+//			w.WriteHeader(http.StatusNoContent)
+//			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+//			return
+//		}
+//
+//		defer r.Body.Close()
+//		if body, err := ioutil.ReadAll(r.Body); err != nil {
+//			w.Header().Set("Content-Type", "application/json")
+//			w.WriteHeader(http.StatusBadRequest)
+//			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+//			return
+//		} else {
+//			val2 := make(map[string]interface{})
+//			if err := json.Unmarshal(body, &val2); err != nil {
+//				w.Header().Set("Content-Type", "application/json")
+//				w.WriteHeader(http.StatusNoContent)
+//				fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+//				return
+//			}
+//
+//			if !reflect.DeepEqual(val1["stages"], val2["stages"]) {
+//				w.Header().Set("Content-Type", "application/json")
+//				w.WriteHeader(http.StatusNoContent)
+//				fmt.Fprint(w, fmt.Sprintf(`{"Error": "bad content"}`))
+//			} else {
+//				w.WriteHeader(http.StatusOK)
+//			}
+//		}
+//	}))
+//	defer server.Close()
+//
+//	client := New(server.URL, "", "")
+//
+//	data, err := ioutil.ReadFile(createPath("post_pipeline_config"))
+//	if err != nil {
+//		t.Error(err)
+//		t.Fail()
+//	}
+//
+//	pipeline := PipelineConfig{}
+//
+//	if err := json.Unmarshal(data, &pipeline); err != nil {
+//		t.Error(err)
+//		t.Fail()
+//	}
+//
+//	if err := client.SetPipelineConfig(&pipeline); err != nil {
+//		t.Error(err)
+//		t.Fail()
+//	}
+//}

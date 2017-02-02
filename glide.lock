@@ -1,6 +1,18 @@
-hash: 29c47ef1b998086252db4e5be9d8f3f323f515b1f29b182e41e4ef3ecc27802f
-updated: 2017-02-01T12:20:22.169813194+03:00
+hash: 55b94b0f6e52c13bd740f53646f4e9b9e350b7176819b44faadb05e7de7e718b
+updated: 2017-02-02T13:45:13.14607872+03:00
 imports:
+- name: github.com/fatih/structs
+  version: a720dfa8df582c51dee1b36feabb906bde1588bd
 - name: github.com/stretchr/testify
   version: 4d4bfba8f1d1027c4fdbe371823030df51419987
-testImports: []
+  subpackages:
+  - assert
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib

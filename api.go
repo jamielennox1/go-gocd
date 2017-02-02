@@ -14,6 +14,7 @@ type Client struct {
 	login    string
 	password string
 	Etag     string
+	EtagEnv  string
 }
 
 func New(host, login, password string) *Client {
@@ -125,6 +126,13 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
 			p.Etag = tag[0]
 		}
+
+		for _, env := range pipeline.EnvironmentVariables {
+			fmt.Println(env)
+		}
+
+		fmt.Println(pipeline.EnvironmentVariables)
+
 		return &pipeline, nil
 	}
 }
@@ -208,7 +216,7 @@ func (p *Client) DeletePipelineConfig(name string) error {
 	}
 
 	for _, env := range envs.Embeded.Environments {
-		if env.DeletePipeline(name) {
+		if err := env.DeletePipeline(name); err == nil {
 			if err := p.SetEnvironment(&env); err != nil {
 				return err
 			}
@@ -233,9 +241,9 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 	if err := p.unmarshal(resp.Body, &envs); err != nil {
 		return nil, err
 	} else {
-		//if tag := resp.Header["Etag"]; len(tag) > 0 {
-		//	p.Etag = tag[0]
-		//}
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.EtagEnv = tag[0]
+		}
 		return &envs, nil
 	}
 }
@@ -256,7 +264,7 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 		return nil, err
 	} else {
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
-			p.Etag = tag[0]
+			p.EtagEnv = tag[0]
 		}
 		return &env, nil
 	}
@@ -264,10 +272,10 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 
 func (p *Client) NewEnvironment(env *Environment) error {
 	data := struct {
-		Name                 string                `json:"name"`
-		Pipelines            []map[string]string   `json:"pipelines"`
-		Agents               []map[string]string   `json:"agents"`
-		EnvironmentVariables []EnvironmentVariable `json:"environment_variables"`
+		Name                 string                   `json:"name"`
+		Pipelines            []map[string]string      `json:"pipelines"`
+		Agents               []map[string]string      `json:"agents"`
+		EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
 	}{Name: env.Name, EnvironmentVariables: env.EnvironmentVariables}
 
 	for _, p := range env.Pipelines {
@@ -295,10 +303,10 @@ func (p *Client) NewEnvironment(env *Environment) error {
 
 func (p *Client) SetEnvironment(env *Environment) error {
 	data := struct {
-		Name                 string                `json:"name"`
-		Pipelines            []map[string]string   `json:","`
-		Agents               []map[string]string   `json:","`
-		EnvironmentVariables []EnvironmentVariable `json:"environment_variables"`
+		Name                 string                   `json:"name"`
+		Pipelines            []map[string]string      `json:","`
+		Agents               []map[string]string      `json:","`
+		EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
 	}{Name: env.Name}
 
 	for _, p := range env.Pipelines {
@@ -318,7 +326,7 @@ func (p *Client) SetEnvironment(env *Environment) error {
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
 		body,
 		map[string]string{
-			"If-Match": p.Etag,
+			"If-Match": p.EtagEnv,
 			"Accept":   "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
@@ -331,7 +339,7 @@ func (p *Client) DeleteEnvironment(name string) error {
 	if resp, err := p.goCDRequest("DELETE",
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, name),
 		[]byte{},
-		map[string]string{"If-Match": p.Etag,
+		map[string]string{"If-Match": p.EtagEnv,
 			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {

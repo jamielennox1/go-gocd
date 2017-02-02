@@ -1,3 +1,4 @@
 package: github.com/mhanygin/go-gocd
 import:
   - package: github.com/stretchr/testify
+  - package: github.com/fatih/structs

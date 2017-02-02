@@ -1,13 +1,18 @@
 package gocd
 
+import (
+	"fmt"
+
+	"github.com/fatih/structs"
+)
+
 type JobStateTransitions struct {
 	StateChangeTime int    `json:"state_change_time,omitempty"`
 	ID              int    `json:"id,omitempty"`
 	State           string `json:"state,omitempty"`
 }
 
-type Parameter struct {
-	Name  string `json:"name"`
+type Value struct {
 	Value string `json:"value"`
 }
 
@@ -16,6 +21,23 @@ type Material struct {
 	Fingerprint string `json:"fingerprint,omitempty"`
 	Type        string `json:"type,omitempty"`
 	ID          int    `json:"id,omitempty"`
+}
+
+type MaterialGitConfig struct {
+	Type       string `json:"type"`
+	Attributes struct {
+		Name        string `json:"name"`
+		URL         string `json:"url"`
+		Branch      string `json:"branch"`
+		Destination string `json:"destination"`
+		AutoUpdate  bool   `json:"auto_update"`
+		Filter      struct {
+			Ignore []string `json:"ignore"`
+		} `json:"filter"`
+		InvertFilter    bool   `json:"invert_filter"`
+		SubmoduleFolder string `json:"submodule_folder"`
+		ShallowClone    bool   `json:"shallow_clone"`
+	} `json:"attributes"`
 }
 
 type Modification struct {
@@ -56,6 +78,74 @@ type Job struct {
 	StageName           string                `json:"stage_name,omitempty"`
 }
 
+type JobConfig struct {
+	Name                 string                   `json:"name"`
+	RunInstanceCount     int                      `json:"run_instance_count"`
+	Timeout              int                      `json:"timeout"`
+	EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
+	Resources            []string                 `json:"resources"`
+	Tasks                []map[string]interface{} `json:"resources"`
+}
+
+func (p *JobConfig) AddTask(task interface{}) error {
+	switch task.(type) {
+	case TaskExecConfig:
+		p.Tasks = append(p.Tasks, structs.Map(task))
+		return nil
+	case TaskAntConfig:
+		p.Tasks = append(p.Tasks, structs.Map(task))
+		return nil
+	case TaskNantConfig:
+		p.Tasks = append(p.Tasks, structs.Map(task))
+		return nil
+	default:
+		return fmt.Errorf("Type %T not support", task)
+	}
+}
+
+type TaskExecConfig struct {
+	Type       string
+	attributes struct {
+		RunIf            []string `json:"run_if"`
+		Command          string   `json:"command"`
+		Arguments        []string `json:"arguments"`
+		WorkingDirectory string   `json:"working_directory"`
+	} `json:"attributes"`
+}
+
+func NewTaskExecConfig() *TaskExecConfig {
+	return &TaskExecConfig{Type: "exec"}
+}
+
+type TaskAntConfig struct {
+	Type       string `json:"type"`
+	attributes struct {
+		RunIf            []string `json:"run_if"`
+		WorkingDirectory string   `json:"working_directory"`
+		BuildFile        string   `json:"build_file"`
+		Target           string   `json:"build_file"`
+	} `json:"attributes"`
+}
+
+func NewTaskAntConfig() *TaskAntConfig {
+	return &TaskAntConfig{Type: "ant"}
+}
+
+type TaskNantConfig struct {
+	Type       string `json:"type"`
+	attributes struct {
+		RunIf            []string `json:"run_if"`
+		WorkingDirectory string   `json:"working_directory"`
+		BuildFile        string   `json:"build_file"`
+		Target           string   `json:"build_file"`
+		NantPath         string   `json:"nant_path"`
+	} `json:"attributes"`
+}
+
+func NewTaskNantConfig() *TaskNantConfig {
+	return &TaskNantConfig{Type: "nant"}
+}
+
 type Stage struct {
 	Name                  string `json:"name,omitempty"`
 	CleanWorkingDirectory bool   `json:"clean_working_directory,omitempty"`
@@ -70,6 +160,22 @@ type Stage struct {
 	RerunOfCounter        int    `json:"rerun_of_counter,omitempty"`
 	FetchMaterials        bool   `json:"fetch_materials,omitempty"`
 	ArtifactsDeleted      bool   `json:"artifacts_deleted,omitempty"`
+}
+
+type StageConfig struct {
+	Name                  string `json:"name"`
+	FetchMaterials        bool   `json:"fetch_materials"`
+	CleanWorkingDirectory bool   `json:"clean_working_directory"`
+	NeverCleanupArtifacts bool   `json:"never_cleanup_artifacts"`
+	Approval              struct {
+		Type          string `json:"type"`
+		Authorization struct {
+			Roles []string `json:"roles"`
+			Users []string `json:"users"`
+		} `json:"authorization"`
+	} `json:"approval"`
+	EnvironmentVariables []EnvironmentVariable `json:"environment_variables"`
+	Jobs                 []JobConfig           `json:"jobs"`
 }
 
 type PipelineInstance struct {
@@ -89,12 +195,21 @@ type PipelineInstances struct {
 }
 
 type PipelineConfig struct {
-	LabelTemplate         string                `json:"label_template,omitempty"`
-	EnablePipelineLocking bool                  `json:"enable_pipeline_locking"`
-	Name                  string                `json:"name"`
-	Template              string                `json:"template"`
-	Parameters            []Parameter           `json:"parameters"`
-	EnvironmentVariables  []EnvironmentVariable `json:"environment_variables"`
-	Materials             []Material            `json:"materials"`
-	Stages                []Stage               `json:"stages"`
+	LabelTemplate         string                       `json:"label_template,omitempty"`
+	EnablePipelineLocking bool                         `json:"enable_pipeline_locking"`
+	Name                  string                       `json:"name"`
+	Template              string                       `json:"template"`
+	Params                map[string]map[string]string `json:"params"`
+	EnvironmentVariables  []map[string]interface{}     `json:"environment_variables"`
+	Materials             []MaterialGitConfig          `json:"materials"`
+	Stages                []StageConfig                `json:"stages"`
+}
+
+func NewPipelineConfig() *PipelineConfig {
+	return &PipelineConfig{
+		EnablePipelineLocking: false,
+		Params:                make(map[string]map[string]string),
+		EnvironmentVariables:  make([]map[string]interface{}, 0),
+		Materials:             make([]MaterialGitConfig, 0),
+		Stages:                make([]StageConfig, 0)}
 }

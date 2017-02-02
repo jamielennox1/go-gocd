@@ -1,6 +1,7 @@
 package gocd
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -25,28 +26,34 @@ type ShortPipeline struct {
 }
 
 type EnvironmentVariable struct {
-	Secure          bool   `json:"secure"`
-	Name            string `json:"name"`
-	Value           string `json:"value, omitempty"`
-	Encrypted_value string `json:"encrypted_value, omitempty"`
+	Secure bool
+	Crypt  bool
+	Name   string
+	Value  string
 }
 
 type Environment struct {
-	Links                Links                 `json:"_links"`
-	Name                 string                `json:"name"`
-	Agents               []Agent               `json:"agents"`
-	EnvironmentVariables []EnvironmentVariable `json:"environment_variables"`
-	Pipelines            []ShortPipeline       `json:"pipelines"`
+	Links                Links                    `json:"_links"`
+	Name                 string                   `json:"name"`
+	Agents               []Agent                  `json:"agents"`
+	EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
+	Pipelines            []ShortPipeline          `json:"pipelines"`
 }
 
-func (p *Environment) AddPipeline(pipeline string) bool {
+func NewEnvironment() *Environment {
+	return &Environment{Agents: make([]Agent, 0),
+		Pipelines:            make([]ShortPipeline, 0),
+		EnvironmentVariables: make([]map[string]interface{}, 0)}
+}
+
+func (p *Environment) AddPipeline(pipeline string) error {
 	for _, p := range p.Pipelines {
 		if strings.Compare(p.Name, pipeline) == 0 {
-			return false
+			return fmt.Errorf("Pipeline %s exist", pipeline)
 		}
 	}
 	p.Pipelines = append(p.Pipelines, ShortPipeline{Name: pipeline})
-	return true
+	return nil
 }
 
 func (p *Environment) ExistPipeline(pipeline string) bool {
@@ -58,15 +65,63 @@ func (p *Environment) ExistPipeline(pipeline string) bool {
 	return false
 }
 
-func (p *Environment) DeletePipeline(pipeline string) bool {
+func (p *Environment) DeletePipeline(pipeline string) error {
 	for i := 0; i < len(p.Pipelines); i++ {
 		if strings.Compare(p.Pipelines[i].Name, pipeline) == 0 {
 			p.Pipelines[i] = p.Pipelines[len(p.Pipelines)-1]
 			p.Pipelines = p.Pipelines[:len(p.Pipelines)-1]
-			return true
+			return nil
 		}
 	}
-	return false
+	return fmt.Errorf("Pipeline %s not exist", pipeline)
+}
+
+func (p *Environment) AddEnvironmentVariables(env *EnvironmentVariable) error {
+	valueField := "value"
+	if env.Secure && !env.Crypt {
+		valueField = "encrypted_value"
+	}
+	for _, v := range p.EnvironmentVariables {
+		if name, _ := v["name"]; strings.Compare(name.(string), env.Name) == 0 {
+			return fmt.Errorf("Env %s exist", env.Name)
+		}
+	}
+
+	p.EnvironmentVariables = append(p.EnvironmentVariables, map[string]interface{}{
+		"name":     env.Name,
+		"secure":   env.Secure,
+		valueField: env.Value})
+	return nil
+}
+
+func (p *Environment) GetEnvironmentVariables(name string) (*EnvironmentVariable, error) {
+	for _, v := range p.EnvironmentVariables {
+		if n, _ := v["name"]; strings.Compare(n.(string), name) == 0 {
+			env := EnvironmentVariable{Name: name, Secure: v["secure"].(bool)}
+			if val, ok := v["encrypted_value"]; ok {
+				env.Value = val.(string)
+				env.Crypt = false
+			} else {
+				env.Value = v["value"].(string)
+				env.Crypt = env.Secure
+			}
+			return &env, nil
+		}
+	}
+	return nil, fmt.Errorf("Env %s not exist", name)
+}
+
+func (p *Environment) DeleteEnvironmentVariables(name string) error {
+	for i, v := range p.EnvironmentVariables {
+		if n, _ := v["name"]; strings.Compare(n.(string), name) == 0 {
+			if i != (len(p.EnvironmentVariables) - 1) {
+				p.EnvironmentVariables[i] = p.EnvironmentVariables[len(p.EnvironmentVariables)-1]
+			}
+			p.EnvironmentVariables = p.EnvironmentVariables[:(len(p.EnvironmentVariables) - 1)]
+			return nil
+		}
+	}
+	return fmt.Errorf("Env %s not exist", name)
 }
 
 type Environments struct {

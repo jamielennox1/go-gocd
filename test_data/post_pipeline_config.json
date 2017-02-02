@@ -1,0 +1,104 @@
+{
+  "materials": [
+    {
+      "attributes": {
+        "branch": "feature-test",
+        "destination": "sources",
+        "shallow_clone": true,
+        "url": "#{repo.url}"
+      },
+      "type": "git"
+    }
+  ],
+  "name": "example",
+  "params": {
+    "branch": {
+      "value": "feature-test"
+    },
+    "repo.url": {
+      "value": "git@gitlab.ru:tools/test.git"
+    }
+  },
+  "stages": [
+    {
+      "clean_working_directory": true,
+      "jobs": [
+        {
+          "artifacts": [
+            {
+              "destination": "artifacts",
+              "source": "sources/manifest.yml",
+              "type": "build"
+            }
+          ],
+          "name": "Create-Package",
+          "resources": [
+            "Builder",
+            "Debian"
+          ],
+          "tasks": [
+            {
+              "attributes": {
+                "arguments": [
+                  "-c",
+                  "serve build --var branch=\"#{branch}\" --var build-number=\"${GO_PIPELINE_LABEL}\" --var stage-counter=\"${GO_STAGE_COUNTER}\""
+                ],
+                "command": "/bin/bash",
+                "run_if": [
+                  "passed"
+                ],
+                "working_directory": "sources"
+              },
+              "type": "exec"
+            }
+          ]
+        }
+      ],
+      "name": "Build"
+    },
+    {
+      "clean_working_directory": true,
+      "fetch_materials": false,
+      "jobs": [
+        {
+          "name": "Deploy",
+          "resources": [
+            "Builder"
+          ],
+          "tasks": [
+            {
+              "attributes": {
+                "destination": "sources",
+                "is_source_a_file": true,
+                "job": "Create-Package",
+                "pipeline": "",
+                "run_if": [
+                  "passed"
+                ],
+                "source": "artifacts/manifest.yml",
+                "stage": "Build"
+              },
+              "type": "fetch"
+            },
+            {
+              "attributes": {
+                "arguments": [
+                  "-c",
+                  "serve deploy --var branch=\"#{branch}\" --var build-number=\"${GO_PIPELINE_LABEL}\" --var stage-counter=\"${GO_STAGE_COUNTER}\""
+                ],
+                "command": "/bin/bash",
+                "run_if": [
+                  "passed"
+                ],
+                "working_directory": "sources"
+              },
+              "type": "exec"
+            }
+          ]
+        }
+      ],
+      "name": "Deployment"
+    }
+  ],
+  "template": "example-template"
+}
