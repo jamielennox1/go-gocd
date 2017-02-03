@@ -131,6 +131,12 @@ type Environments struct {
 	} `json:"_embedded"`
 }
 
+func NewEnvironments() *Environments {
+	return &Environments{Embeded: struct {
+		Environments []Environment `json:"environments"`
+	}{Environments: make([]Environment, 0)}}
+}
+
 type Version struct {
 	Links struct {
 		Self Link `json:"self"`

@@ -84,7 +84,7 @@ type JobConfig struct {
 	Timeout              int                      `json:"timeout"`
 	EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
 	Resources            []string                 `json:"resources"`
-	Tasks                []map[string]interface{} `json:"resources"`
+	Tasks                []map[string]interface{} `json:"tasks"`
 }
 
 func (p *JobConfig) AddTask(task interface{}) error {
@@ -190,8 +190,16 @@ type PipelineInstance struct {
 	BuildCause   BuildCause `json:"build_cause,omitempty"`
 }
 
+func NewPipelineInstance() *PipelineInstance {
+	return &PipelineInstance{Stages: make([]Stage, 0)}
+}
+
 type PipelineInstances struct {
 	Instances []PipelineInstance `json:"pipelines"`
+}
+
+func NewPipelineInstances() *PipelineInstances {
+	return &PipelineInstances{Instances: make([]PipelineInstance, 0)}
 }
 
 type PipelineConfig struct {

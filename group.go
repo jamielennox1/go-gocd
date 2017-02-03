@@ -1,6 +1,8 @@
 package gocd
 
-import "strings"
+import (
+	"strings"
+)
 
 type Group struct {
 	Name      string `json:"name"`

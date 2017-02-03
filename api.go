@@ -26,9 +26,6 @@ func (p *Client) unmarshal(data io.ReadCloser, v interface{}) error {
 	if body, err := ioutil.ReadAll(data); err != nil {
 		return err
 	} else {
-
-		//fmt.Println(string(body))
-
 		return json.Unmarshal(body, v)
 	}
 }
@@ -81,11 +78,11 @@ func (p *Client) GetPipelineInstance(name string, inst int) (*PipelineInstance, 
 		return nil, p.createError(resp)
 	}
 
-	pipeline := PipelineInstance{}
-	if err := p.unmarshal(resp.Body, &pipeline); err != nil {
+	pipeline := NewPipelineInstance()
+	if err := p.unmarshal(resp.Body, pipeline); err != nil {
 		return nil, err
 	} else {
-		return &pipeline, nil
+		return pipeline, nil
 	}
 }
 
@@ -100,11 +97,11 @@ func (p *Client) GetHistoryPipelineInstance(name string) (*PipelineInstances, er
 		return nil, p.createError(resp)
 	}
 
-	pipelines := PipelineInstances{}
-	if err := p.unmarshal(resp.Body, &pipelines); err != nil {
+	pipelines := NewPipelineInstances()
+	if err := p.unmarshal(resp.Body, pipelines); err != nil {
 		return nil, err
 	} else {
-		return &pipelines, nil
+		return pipelines, nil
 	}
 }
 
@@ -119,8 +116,8 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 		return nil, p.createError(resp)
 	}
 
-	pipeline := PipelineConfig{}
-	if err := p.unmarshal(resp.Body, &pipeline); err != nil {
+	pipeline := NewPipelineConfig()
+	if err := p.unmarshal(resp.Body, pipeline); err != nil {
 		return nil, err
 	} else {
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
@@ -130,10 +127,7 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 		for _, env := range pipeline.EnvironmentVariables {
 			fmt.Println(env)
 		}
-
-		fmt.Println(pipeline.EnvironmentVariables)
-
-		return &pipeline, nil
+		return pipeline, nil
 	}
 }
 
@@ -237,14 +231,14 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 		return nil, p.createError(resp)
 	}
 
-	envs := Environments{}
-	if err := p.unmarshal(resp.Body, &envs); err != nil {
+	envs := NewEnvironments()
+	if err := p.unmarshal(resp.Body, envs); err != nil {
 		return nil, err
 	} else {
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
 			p.EtagEnv = tag[0]
 		}
-		return &envs, nil
+		return envs, nil
 	}
 }
 
@@ -259,14 +253,14 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 		return nil, p.createError(resp)
 	}
 
-	env := Environment{}
-	if err := p.unmarshal(resp.Body, &env); err != nil {
+	env := NewEnvironment()
+	if err := p.unmarshal(resp.Body, env); err != nil {
 		return nil, err
 	} else {
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
 			p.EtagEnv = tag[0]
 		}
-		return &env, nil
+		return env, nil
 	}
 }
 
@@ -395,7 +389,7 @@ func (p *Client) GetGroups() (*[]Group, error) {
 		return nil, p.createError(resp)
 	}
 
-	groups := []Group{}
+	groups := make([]Group, 0)
 	if err := p.unmarshal(resp.Body, &groups); err != nil {
 		return nil, err
 	} else {
