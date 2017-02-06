@@ -16,54 +16,54 @@ func main() {
 }
 
 ## API Endpoints Pending
-- [ ] Agents
+- Agents
   - [ ] Get all Agents
   - [ ] Get one Agent
   - [ ] Update an Agent
   - [ ] Disable Agent
   - [ ] Delete an Agent
   - [ ] Agent job run history
-- [ ] Users
+- Users
   - [ ] Get all Users
   - [ ] Get one user
   - [ ] Create a user
   - [ ] Update a user
   - [ ] Delete a user
-- [ ] Materials
+- Materials
   - [ ] Get all Materials
   - [ ] Get material modifications
   - [ ] Notify SVN materials
   - [ ] Notify git materials
-- [ ] Backups
+- Backups
   - [ ] Create a backup
-- [ ] Pipeline Group
-  - [ ] Config listing
-- [ ] Artifacts
+- Pipeline Group
+  - [x] Config listing
+- Artifacts
   - [ ] Get all Artifacts
   - [ ] Get artifact file
   - [ ] Get artifact directory
   - [ ] Create artifact
   - [ ] Append to artifact
-- [ ] Pipelines
+- Pipelines
   - [x] Get pipeline instance
   - [ ] Get pipeline status
   - [x] Pause a pipeline
   - [x] Unpause a pipeline
   - [ ] Releasing a pipeline lock
   - [x] Scheduling Pipelines
-- [ ] Stages
+- Stages
   - [ ] Cancel Stage
   - [ ] Get Stage instance
   - [ ] Get stage history
-- [ ] Jobs
+- Jobs
   - [ ] Get Scheduled Jobs
   - [ ] Get Job history
-- [ ] Properties
+- Properties
   - [ ] Get all job Properties
   - [ ] Get one property
   - [ ] Get historical properties
   - [ ] Create property
-- [ ] Configurations
+- Configurations
   - [ ] List all modifications
   - [ ] Get repository modification diff
   - [ ] Get Configuration  
@@ -75,7 +75,7 @@ func main() {
   - [x] Delete an environment
 - [ ] Dashboard
   - [ ] Get Dashboard
-- [x] Pipeline Config
+- Pipeline Config
   - [x] Get pipeline Configuration
   - [x] Edit Pipeline configuration
   - [x] Create Pipeline
