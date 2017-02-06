@@ -43,7 +43,7 @@ func (p *Client) goCDRequest(method string, resource string, body []byte, header
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	//req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(p.login, p.password)
 	return http.DefaultClient.Do(req)
 }
@@ -144,7 +144,8 @@ func (p *Client) NewPipelineConfig(pipeline *PipelineConfig, group string) error
 	if resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/admin/pipelines", p.host),
 		body,
-		map[string]string{"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+		map[string]string{"Content-Type": "application/json",
+			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
@@ -156,7 +157,8 @@ func (p *Client) NewPipelineConfigRaw(data []byte) error {
 	if resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/admin/pipelines", p.host),
 		data,
-		map[string]string{"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+		map[string]string{"Content-Type": "application/json",
+			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
@@ -173,7 +175,8 @@ func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, pipeline.Name),
 		body,
 		map[string]string{"If-Match": p.Etag,
-			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+			"Content-Type": "application/json",
+			"Accept":       "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
@@ -186,7 +189,8 @@ func (p *Client) SetPipelineConfigRaw(name string, data []byte) error {
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
 		data,
 		map[string]string{"If-Match": p.Etag,
-			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+			"Content-Type": "application/json",
+			"Accept":       "application/vnd.go.cd.v2+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
@@ -287,7 +291,8 @@ func (p *Client) NewEnvironment(env *Environment) error {
 	if resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/admin/environments", p.host),
 		body,
-		map[string]string{"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
+		map[string]string{"Content-Type": "application/json",
+			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
@@ -319,9 +324,9 @@ func (p *Client) SetEnvironment(env *Environment) error {
 	if resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
 		body,
-		map[string]string{
-			"If-Match": p.EtagEnv,
-			"Accept":   "application/vnd.go.cd.v1+json"}); err != nil {
+		map[string]string{"If-Match": p.EtagEnv,
+			"Content-Type": "application/json",
+			"Accept":       "application/vnd.go.cd.v1+json"}); err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
 		return p.createError(resp)
