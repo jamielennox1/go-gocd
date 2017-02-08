@@ -43,7 +43,6 @@ func (p *Client) goCDRequest(method string, resource string, body []byte, header
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	//req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(p.login, p.password)
 	return http.DefaultClient.Do(req)
 }
@@ -60,11 +59,7 @@ func (p *Client) Version() (*Version, error) {
 	}
 
 	version := Version{}
-	if err := p.unmarshal(resp.Body, &version); err != nil {
-		return nil, err
-	} else {
-		return &version, nil
-	}
+	return &version, p.unmarshal(resp.Body, &version)
 }
 
 func (p *Client) GetPipelineInstance(name string, inst int) (*PipelineInstance, error) {
@@ -79,30 +74,27 @@ func (p *Client) GetPipelineInstance(name string, inst int) (*PipelineInstance, 
 	}
 
 	pipeline := NewPipelineInstance()
-	if err := p.unmarshal(resp.Body, pipeline); err != nil {
-		return nil, err
-	} else {
-		return pipeline, nil
-	}
+	return pipeline, p.unmarshal(resp.Body, pipeline)
 }
 
-func (p *Client) GetHistoryPipelineInstance(name string) (*PipelineInstances, error) {
+func (p *Client) GetHistoryPipelineInstance(name string) ([]*PipelineInstance, error) {
 	resp, err := p.goCDRequest("GET",
 		fmt.Sprintf("%s/go/api/pipelines/%s/history", p.host, name),
 		[]byte{},
 		map[string]string{})
-	if err != nil {
+
+	switch true {
+	case err != nil:
 		return nil, err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return nil, p.createError(resp)
 	}
 
-	pipelines := NewPipelineInstances()
-	if err := p.unmarshal(resp.Body, pipelines); err != nil {
-		return nil, err
-	} else {
-		return pipelines, nil
-	}
+	pipelines := struct {
+		Instances []*PipelineInstance `json:"pipelines"`
+	}{make([]*PipelineInstance, 0)}
+
+	return pipelines.Instances, p.unmarshal(resp.Body, pipelines)
 }
 
 func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
@@ -110,25 +102,20 @@ func (p *Client) GetPipelineConfig(name string) (*PipelineConfig, error) {
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
 		[]byte{},
 		map[string]string{"Accept": "application/vnd.go.cd.v2+json"})
-	if err != nil {
-		return nil, err
-	} else if resp.StatusCode != http.StatusOK {
-		return nil, p.createError(resp)
-	}
 
-	pipeline := NewPipelineConfig()
-	if err := p.unmarshal(resp.Body, pipeline); err != nil {
+	switch true {
+	case err != nil:
 		return nil, err
-	} else {
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	default:
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
 			p.Etag = tag[0]
 		}
-
-		for _, env := range pipeline.EnvironmentVariables {
-			fmt.Println(env)
-		}
-		return pipeline, nil
 	}
+
+	pipeline := NewPipelineConfig()
+	return pipeline, p.unmarshal(resp.Body, pipeline)
 }
 
 func (p *Client) NewPipelineConfig(pipeline *PipelineConfig, group string) error {
@@ -141,29 +128,38 @@ func (p *Client) NewPipelineConfig(pipeline *PipelineConfig, group string) error
 	if err != nil {
 		return err
 	}
-	if resp, err := p.goCDRequest("POST",
+
+	resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/admin/pipelines", p.host),
 		body,
 		map[string]string{"Content-Type": "application/json",
-			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+			"Accept": "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) NewPipelineConfigRaw(data []byte) error {
-	if resp, err := p.goCDRequest("POST",
+	resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/admin/pipelines", p.host),
 		data,
 		map[string]string{"Content-Type": "application/json",
-			"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+			"Accept": "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
@@ -171,40 +167,57 @@ func (p *Client) SetPipelineConfig(pipeline *PipelineConfig) error {
 	if err != nil {
 		return err
 	}
-	if resp, err := p.goCDRequest("PUT",
+	resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, pipeline.Name),
 		body,
 		map[string]string{"If-Match": p.Etag,
 			"Content-Type": "application/json",
-			"Accept":       "application/vnd.go.cd.v2+json"}); err != nil {
+			"Accept":       "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.Etag = tag[0]
+		}
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) SetPipelineConfigRaw(name string, data []byte) error {
-	if resp, err := p.goCDRequest("PUT",
+	resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
 		data,
 		map[string]string{"If-Match": p.Etag,
 			"Content-Type": "application/json",
-			"Accept":       "application/vnd.go.cd.v2+json"}); err != nil {
+			"Accept":       "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.Etag = tag[0]
+		}
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) DeletePipelineConfig(name string) error {
-	if resp, err := p.goCDRequest("DELETE",
+	resp, err := p.goCDRequest("DELETE",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
 		[]byte{},
-		map[string]string{"Accept": "application/vnd.go.cd.v2+json"}); err != nil {
+		map[string]string{"Accept": "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
 	}
 
@@ -229,21 +242,20 @@ func (p *Client) GetEnvironments() (*Environments, error) {
 		fmt.Sprintf("%s/go/api/admin/environments", p.host),
 		[]byte{},
 		map[string]string{"Accept": "application/vnd.go.cd.v1+json"})
-	if err != nil {
-		return nil, err
-	} else if resp.StatusCode != http.StatusOK {
-		return nil, p.createError(resp)
-	}
 
-	envs := NewEnvironments()
-	if err := p.unmarshal(resp.Body, envs); err != nil {
+	switch true {
+	case err != nil:
 		return nil, err
-	} else {
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	default:
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
 			p.EtagEnv = tag[0]
 		}
-		return envs, nil
 	}
+
+	envs := NewEnvironments()
+	return envs, p.unmarshal(resp.Body, envs)
 }
 
 func (p *Client) GetEnvironment(name string) (*Environment, error) {
@@ -251,21 +263,20 @@ func (p *Client) GetEnvironment(name string) (*Environment, error) {
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, name),
 		[]byte{},
 		map[string]string{"Accept": "application/vnd.go.cd.v1+json"})
-	if err != nil {
-		return nil, err
-	} else if resp.StatusCode != http.StatusOK {
-		return nil, p.createError(resp)
-	}
 
-	env := NewEnvironment()
-	if err := p.unmarshal(resp.Body, env); err != nil {
+	switch true {
+	case err != nil:
 		return nil, err
-	} else {
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	default:
 		if tag := resp.Header["Etag"]; len(tag) > 0 {
 			p.EtagEnv = tag[0]
 		}
-		return env, nil
 	}
+
+	env := NewEnvironment()
+	return env, p.unmarshal(resp.Body, env)
 }
 
 func (p *Client) NewEnvironment(env *Environment) error {
@@ -288,23 +299,30 @@ func (p *Client) NewEnvironment(env *Environment) error {
 		return err
 	}
 
-	if resp, err := p.goCDRequest("POST",
+	resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/admin/environments", p.host),
 		body,
 		map[string]string{"Content-Type": "application/json",
-			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
+			"Accept": "application/vnd.go.cd.v1+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.EtagEnv = tag[0]
+		}
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) SetEnvironment(env *Environment) error {
 	data := struct {
 		Name                 string                   `json:"name"`
-		Pipelines            []map[string]string      `json:","`
-		Agents               []map[string]string      `json:","`
+		Pipelines            []map[string]string      `json:"pipelines"`
+		Agents               []map[string]string      `json:"agents"`
 		EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
 	}{Name: env.Name}
 
@@ -321,85 +339,164 @@ func (p *Client) SetEnvironment(env *Environment) error {
 		return err
 	}
 
-	if resp, err := p.goCDRequest("PUT",
+	p.GetEnvironment(env.Name)
+
+	resp, err := p.goCDRequest("PUT",
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, env.Name),
 		body,
 		map[string]string{"If-Match": p.EtagEnv,
 			"Content-Type": "application/json",
-			"Accept":       "application/vnd.go.cd.v1+json"}); err != nil {
+			"Accept":       "application/vnd.go.cd.v1+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		if tag := resp.Header["Etag"]; len(tag) > 0 {
+			p.EtagEnv = tag[0]
+		}
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) DeleteEnvironment(name string) error {
-	if resp, err := p.goCDRequest("DELETE",
+	resp, err := p.goCDRequest("DELETE",
 		fmt.Sprintf("%s/go/api/admin/environments/%s", p.host, name),
 		[]byte{},
 		map[string]string{"If-Match": p.EtagEnv,
-			"Accept": "application/vnd.go.cd.v1+json"}); err != nil {
+			"Accept": "application/vnd.go.cd.v1+json"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) UnpausePipeline(name string) error {
-	if resp, err := p.goCDRequest("POST",
+	resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/pipelines/%s/unpause", p.host, name),
 		[]byte{},
-		map[string]string{"Confirm": "true"}); err != nil {
+		map[string]string{"Confirm": "true"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) PausePipeline(name string) error {
-	if resp, err := p.goCDRequest("POST",
+	resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/pipelines/%s/pause", p.host, name),
 		[]byte{'p', 'a', 'u', 's', 'e', 'C', 'a', 'u', 's', 'e', '=', 't', 'a', 'k', 'e', ' ', 's', 'o', 'm', 'e', ' ', 'r', 'e', 's', 't'},
-		map[string]string{"Confirm": "true"}); err != nil {
+		map[string]string{"Confirm": "true"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (p *Client) SchedulePipeline(name string, data []byte) error {
-	if resp, err := p.goCDRequest("POST",
+	resp, err := p.goCDRequest("POST",
 		fmt.Sprintf("%s/go/api/pipelines/%s/schedule", p.host, name),
 		data,
-		map[string]string{"Confirm": "true"}); err != nil {
+		map[string]string{"Confirm": "true"})
+
+	switch true {
+	case err != nil:
 		return err
-	} else if resp.StatusCode != http.StatusAccepted {
+	case resp.StatusCode != http.StatusAccepted:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-	return nil
 }
 
-func (p *Client) GetGroups() (*[]Group, error) {
+func (p *Client) GetGroups() (*[]*Group, error) {
 	resp, err := p.goCDRequest("GET",
 		fmt.Sprintf("%s/go/api/config/pipeline_groups", p.host),
 		[]byte{},
 		map[string]string{})
-	if err != nil {
+
+	switch true {
+	case err != nil:
 		return nil, err
-	} else if resp.StatusCode != http.StatusOK {
+	case resp.StatusCode != http.StatusOK:
 		return nil, p.createError(resp)
 	}
 
-	groups := make([]Group, 0)
+	groups := make([]*Group, 0)
 	if err := p.unmarshal(resp.Body, &groups); err != nil {
 		return nil, err
 	} else {
 		return &groups, nil
 	}
+}
+
+func (p *Client) StageCancel(pipeline string, stage string) error {
+	resp, err := p.goCDRequest("POST",
+		fmt.Sprintf("%s/go/api/stages/%s/%s/cancel", p.host, pipeline, stage),
+		make([]byte, 0),
+		map[string]string{"Confirm": "true"})
+
+	switch true {
+	case err != nil:
+		return err
+	case resp.StatusCode != http.StatusOK:
+		return p.createError(resp)
+	default:
+		return nil
+	}
+}
+
+func (p *Client) GetStageInstance(pipeline string, pInst int, stage string, sInst int) (*Stage, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/stages/%s/%s/instance/%d/%d", p.host, pipeline, stage, pInst, sInst),
+		make([]byte, 0),
+		map[string]string{})
+
+	switch true {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	}
+
+	s := NewStage()
+	return s, p.unmarshal(resp.Body, s)
+}
+
+func (p *Client) GetStageInstanceHystory(pipeline string, stage string) (*[]*Stage, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/stages/%s/%s/history", p.host, pipeline, stage),
+		make([]byte, 0),
+		map[string]string{})
+
+	switch true {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	}
+
+	stages := struct {
+		Stages []*Stage `json:"stages"`
+	}{Stages: make([]*Stage, 0)}
+	return &stages.Stages, p.unmarshal(resp.Body, &stages)
 }
 
 func (p *Client) FindPipelineConfig(name string) (*PipelineConfig, *Environment, error) {

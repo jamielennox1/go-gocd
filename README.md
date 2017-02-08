@@ -52,9 +52,9 @@ func main() {
   - [ ] Releasing a pipeline lock
   - [x] Scheduling Pipelines
 - Stages
-  - [ ] Cancel Stage
-  - [ ] Get Stage instance
-  - [ ] Get stage history
+  - [x] Cancel Stage
+  - [x] Get Stage instance
+  - [x] Get stage history
 - Jobs
   - [ ] Get Scheduled Jobs
   - [ ] Get Job history

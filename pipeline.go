@@ -155,11 +155,19 @@ type Stage struct {
 	PipelineName          string `json:"pipeline_name,omitempty"`
 	ApprovalType          string `json:"approval_type,omitempty"`
 	Result                string `json:"result,omitempty"`
-	Counter               string `json:"counter,omitempty"`
+	Counter               int    `json:"counter,omitempty"`
 	ID                    int    `json:"id,omitempty"`
 	RerunOfCounter        int    `json:"rerun_of_counter,omitempty"`
 	FetchMaterials        bool   `json:"fetch_materials,omitempty"`
 	ArtifactsDeleted      bool   `json:"artifacts_deleted,omitempty"`
+}
+
+func NewStage() *Stage {
+	return &Stage{
+		CleanWorkingDirectory: false,
+		Jobs:             make([]Job, 0),
+		FetchMaterials:   false,
+		ArtifactsDeleted: false}
 }
 
 type StageConfig struct {
@@ -194,29 +202,21 @@ func NewPipelineInstance() *PipelineInstance {
 	return &PipelineInstance{Stages: make([]Stage, 0)}
 }
 
-type PipelineInstances struct {
-	Instances []PipelineInstance `json:"pipelines"`
-}
-
-func NewPipelineInstances() *PipelineInstances {
-	return &PipelineInstances{Instances: make([]PipelineInstance, 0)}
-}
-
 type PipelineConfig struct {
-	LabelTemplate         string                       `json:"label_template,omitempty"`
-	EnablePipelineLocking bool                         `json:"enable_pipeline_locking"`
-	Name                  string                       `json:"name"`
-	Template              string                       `json:"template"`
-	Params                map[string]map[string]string `json:"params"`
-	EnvironmentVariables  []map[string]interface{}     `json:"environment_variables"`
-	Materials             []MaterialGitConfig          `json:"materials"`
-	Stages                []StageConfig                `json:"stages"`
+	LabelTemplate         string                   `json:"label_template,omitempty"`
+	EnablePipelineLocking bool                     `json:"enable_pipeline_locking"`
+	Name                  string                   `json:"name"`
+	Template              string                   `json:"template"`
+	Params                []map[string]string      `json:"parameters"`
+	EnvironmentVariables  []map[string]interface{} `json:"environment_variables"`
+	Materials             []MaterialGitConfig      `json:"materials"`
+	Stages                []StageConfig            `json:"stages"`
 }
 
 func NewPipelineConfig() *PipelineConfig {
 	return &PipelineConfig{
 		EnablePipelineLocking: false,
-		Params:                make(map[string]map[string]string),
+		Params:                make([]map[string]string, 0),
 		EnvironmentVariables:  make([]map[string]interface{}, 0),
 		Materials:             make([]MaterialGitConfig, 0),
 		Stages:                make([]StageConfig, 0)}

@@ -233,6 +233,64 @@ func TestClient_GetPipelineConfig(t *testing.T) {
 	}
 }
 
+func TestClient_GetStageInstance(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_stage_instance"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if stage, err := client.GetStageInstance("pipeline_test", 1, "stage_test", 1); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.Equal(t, stage.Name, "stage_test")
+		assert.Equal(t, len(stage.Jobs), 1)
+	}
+}
+
+func TestClient_GetStageInstanceHystory(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_stage_instance_history"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if stages, err := client.GetStageInstanceHystory("pipeline_test", "stage_test"); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.NotNil(t, stages)
+		assert.Equal(t, len(*stages), 3)
+	}
+}
+
 //func TestClient_SetPipelineConfig(t *testing.T) {
 //	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 //		if strings.Compare(r.Method, "PUT") != 0 {

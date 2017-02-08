@@ -1,0 +1,69 @@
+{
+  "stages": [
+    {
+      "name": "stage_test",
+      "approved_by": "admin",
+      "jobs": [
+        {
+          "name": "defaultJob",
+          "result": "Cancelled",
+          "state": "Completed",
+          "id": 3,
+          "scheduled_date": 1436509881002
+        }
+      ],
+      "pipeline_counter": 3,
+      "pipeline_name": "pipeline_test",
+      "result": "Cancelled",
+      "approval_type": "success",
+      "id": 3,
+      "counter": 1,
+      "rerun_of_counter": null
+    },
+    {
+      "name": "stage_test",
+      "approved_by": "admin",
+      "jobs": [
+        {
+          "name": "defaultJob",
+          "result": "Cancelled",
+          "state": "Completed",
+          "id": 2,
+          "scheduled_date": 1436509783931
+        }
+      ],
+      "pipeline_counter": 2,
+      "pipeline_name": "pipeline_test",
+      "result": "Cancelled",
+      "approval_type": "success",
+      "id": 2,
+      "counter": 1,
+      "rerun_of_counter": null
+    },
+    {
+      "name": "stage_test",
+      "approved_by": "changes",
+      "jobs": [
+        {
+          "name": "defaultJob",
+          "result": "Passed",
+          "state": "Completed",
+          "id": 1,
+          "scheduled_date": 1436509518752
+        }
+      ],
+      "pipeline_counter": 1,
+      "pipeline_name": "pipeline_test",
+      "result": "Passed",
+      "approval_type": "success",
+      "id": 1,
+      "counter": 1,
+      "rerun_of_counter": null
+    }
+  ],
+  "pagination": {
+    "offset": 0,
+    "total": 3,
+    "page_size": 10
+  }
+}
