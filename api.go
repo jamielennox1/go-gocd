@@ -9,6 +9,8 @@ import (
 	"net/http"
 )
 
+const VERSION = "0.1.0"
+
 type Client struct {
 	host     string
 	login    string
@@ -58,7 +60,7 @@ func (p *Client) Version() (*Version, error) {
 		return nil, p.createError(resp)
 	}
 
-	version := Version{}
+	version := Version{ClientVersion: VERSION}
 	return &version, p.unmarshal(resp.Body, &version)
 }
 

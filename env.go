@@ -138,7 +138,8 @@ func NewEnvironments() *Environments {
 }
 
 type Version struct {
-	Links struct {
+	ClientVersion string
+	Links         struct {
 		Self Link `json:"self"`
 		Doc  Link `json:"doc"`
 	} `json:"_links"`
