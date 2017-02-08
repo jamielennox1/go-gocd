@@ -209,6 +209,17 @@ func (p *Client) SetPipelineConfigRaw(name string, data []byte) error {
 }
 
 func (p *Client) DeletePipelineConfig(name string) error {
+	pipeline, env, err := p.FindPipelineConfig(name)
+	if pipeline == nil {
+		return fmt.Errorf("%s not found", name)
+	}
+	if env != nil {
+		env.DeletePipeline(name)
+		if err := p.SetEnvironment(env); err != nil {
+			return err
+		}
+	}
+
 	resp, err := p.goCDRequest("DELETE",
 		fmt.Sprintf("%s/go/api/admin/pipelines/%s", p.host, name),
 		[]byte{},
@@ -219,22 +230,9 @@ func (p *Client) DeletePipelineConfig(name string) error {
 		return err
 	case resp.StatusCode != http.StatusOK:
 		return p.createError(resp)
+	default:
+		return nil
 	}
-
-	envs, err := p.GetEnvironments()
-	if err != nil {
-		return err
-	}
-
-	for _, env := range envs.Embeded.Environments {
-		if err := env.DeletePipeline(name); err == nil {
-			if err := p.SetEnvironment(&env); err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	return nil
 }
 
 func (p *Client) GetEnvironments() (*Environments, error) {
