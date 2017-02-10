@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 )
 
 const VERSION = "0.1.0"
@@ -28,6 +29,9 @@ func (p *Client) unmarshal(data io.ReadCloser, v interface{}) error {
 	if body, err := ioutil.ReadAll(data); err != nil {
 		return err
 	} else {
+
+		//fmt.Println(string(body))
+
 		return json.Unmarshal(body, v)
 	}
 }
@@ -480,7 +484,7 @@ func (p *Client) GetStageInstance(pipeline string, pInst int, stage string, sIns
 	return s, p.unmarshal(resp.Body, s)
 }
 
-func (p *Client) GetStageInstanceHystory(pipeline string, stage string) (*[]*Stage, error) {
+func (p *Client) GetStageInstanceHystory(pipeline string, stage string) ([]*Stage, error) {
 	resp, err := p.goCDRequest("GET",
 		fmt.Sprintf("%s/go/api/stages/%s/%s/history", p.host, pipeline, stage),
 		make([]byte, 0),
@@ -496,7 +500,206 @@ func (p *Client) GetStageInstanceHystory(pipeline string, stage string) (*[]*Sta
 	stages := struct {
 		Stages []*Stage `json:"stages"`
 	}{Stages: make([]*Stage, 0)}
-	return &stages.Stages, p.unmarshal(resp.Body, &stages)
+	return stages.Stages, p.unmarshal(resp.Body, &stages)
+}
+
+func (p *Client) GetAllAgents() ([]*Agent, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/agents", p.host),
+		make([]byte, 0),
+		map[string]string{"Accept": "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	}
+
+	data := struct {
+		Embeded struct {
+			Agents []*Agent `json:"agents"`
+		} `json:"_embedded"`
+	}{Embeded: struct {
+		Agents []*Agent `json:"agents"`
+	}{Agents: make([]*Agent, 0)}}
+
+	return data.Embeded.Agents, p.unmarshal(resp.Body, &data)
+}
+
+func (p *Client) GetAgent(uuid string) (*Agent, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/agents/%s", p.host, uuid),
+		make([]byte, 0),
+		map[string]string{"Accept": "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	}
+
+	agent := NewAgent()
+	return agent, p.unmarshal(resp.Body, agent)
+}
+
+func (p *Client) SetAgent(agent Agent) error {
+	old_agent, err := p.GetAgent(agent.Uuid)
+	if err != nil {
+		return err
+	}
+	diff := old_agent.Diff(agent)
+	if reflect.DeepEqual(diff, make(map[string]interface{})) {
+		return nil
+	}
+	body, err := json.Marshal(diff)
+	if err != nil {
+		return err
+	}
+
+	resp, err := p.goCDRequest("PATCH",
+		fmt.Sprintf("%s/go/api/agents/%s", p.host, agent.Uuid),
+		body,
+		map[string]string{"Accept": "application/vnd.go.cd.v2+json",
+			"Content-Type": "application/json"})
+
+	switch true {
+	case err != nil:
+		return err
+	case resp.StatusCode != http.StatusOK:
+		return p.createError(resp)
+	default:
+		return nil
+	}
+}
+
+func (p *Client) DeleteAgent(uuid string) error {
+	resp, err := p.goCDRequest("DELETE",
+		fmt.Sprintf("%s/go/api/agents/%s", p.host, uuid),
+		make([]byte, 0),
+		map[string]string{"Accept": "application/vnd.go.cd.v2+json"})
+
+	switch true {
+	case err != nil:
+		return err
+	case resp.StatusCode != http.StatusOK:
+		return p.createError(resp)
+	default:
+		return nil
+	}
+}
+
+func (p *Client) GetAllUsers() ([]*User, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/users", p.host),
+		make([]byte, 0),
+		map[string]string{"Accept": "application/vnd.go.cd.v1+json"})
+
+	switch true {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	}
+
+	data := struct {
+		Embeded struct {
+			Users []*User `json:"users"`
+		} `json:"_embedded"`
+	}{Embeded: struct {
+		Users []*User `json:"users"`
+	}{Users: make([]*User, 0)}}
+
+	return data.Embeded.Users, p.unmarshal(resp.Body, &data)
+}
+
+func (p *Client) GetUser(login string) (*User, error) {
+	resp, err := p.goCDRequest("GET",
+		fmt.Sprintf("%s/go/api/users/%s", p.host, login),
+		make([]byte, 0),
+		map[string]string{"Accept": "application/vnd.go.cd.v1+json"})
+
+	switch true {
+	case err != nil:
+		return nil, err
+	case resp.StatusCode != http.StatusOK:
+		return nil, p.createError(resp)
+	}
+
+	user := NewUser()
+	return user, p.unmarshal(resp.Body, user)
+}
+
+func (p *Client) NewUser(user *User) error {
+	body, err := json.Marshal(user)
+	if err != nil {
+		return err
+	}
+
+	resp, err := p.goCDRequest("POST",
+		fmt.Sprintf("%s/go/api/users", p.host),
+		body,
+		map[string]string{"Accept": "application/vnd.go.cd.v1+json",
+			"Content-Type": "application/json"})
+
+	switch true {
+	case err != nil:
+		return err
+	case resp.StatusCode != http.StatusOK:
+		return p.createError(resp)
+	default:
+		return nil
+	}
+}
+
+func (p *Client) SetUser(user *User) error {
+	old_user, err := p.GetUser(user.LoginName)
+	if err != nil {
+		return err
+	}
+
+	diff := old_user.Diff(user)
+
+	if reflect.DeepEqual(diff, make(map[string]interface{})) {
+		return nil
+	}
+
+	body, err := json.Marshal(diff)
+	if err != nil {
+		return err
+	}
+
+	resp, err := p.goCDRequest("PATCH",
+		fmt.Sprintf("%s/go/api/users/%s", p.host, user.LoginName),
+		body,
+		map[string]string{"Accept": "application/vnd.go.cd.v1+json",
+			"Content-Type": "application/json"})
+
+	switch true {
+	case err != nil:
+		return err
+	case resp.StatusCode != http.StatusOK:
+		return p.createError(resp)
+	default:
+		return nil
+	}
+}
+
+func (p *Client) DeleteUser(login string) error {
+	resp, err := p.goCDRequest("DELETE",
+		fmt.Sprintf("%s/go/api/users/%s", p.host, login),
+		make([]byte, 0),
+		map[string]string{"Accept": "application/vnd.go.cd.v1+json"})
+
+	switch true {
+	case err != nil:
+		return err
+	case resp.StatusCode != http.StatusOK:
+		return p.createError(resp)
+	default:
+		return nil
+	}
 }
 
 func (p *Client) FindPipelineConfig(name string) (*PipelineConfig, *Environment, error) {

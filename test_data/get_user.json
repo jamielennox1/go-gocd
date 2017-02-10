@@ -1,0 +1,21 @@
+{
+  "_links": {
+    "doc": {
+      "href": "https://api.gocd.io/#users"
+    },
+    "self": {
+      "href": "https://ci.example.com/go/api/users/jdoe"
+    },
+    "find": {
+      "href": "https://ci.example.com/go/api/users/:login_name"
+    }
+  },
+  "login_name": "jdoe",
+  "display_name": "jdoe",
+  "enabled": true,
+  "email": null,
+  "email_me": false,
+  "checkin_aliases": [
+
+  ]
+}

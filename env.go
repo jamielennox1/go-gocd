@@ -15,7 +15,7 @@ type Links struct {
 	Find Link `json:"find"`
 }
 
-type Agent struct {
+type ShortAgent struct {
 	Links Links  `json:"_links"`
 	Uuid  string `json:"uuid"`
 }
@@ -35,13 +35,13 @@ type EnvironmentVariable struct {
 type Environment struct {
 	Links                Links                    `json:"_links"`
 	Name                 string                   `json:"name"`
-	Agents               []Agent                  `json:"agents"`
+	Agents               []ShortAgent             `json:"agents"`
 	EnvironmentVariables []map[string]interface{} `json:"environment_variables"`
 	Pipelines            []ShortPipeline          `json:"pipelines"`
 }
 
 func NewEnvironment() *Environment {
-	return &Environment{Agents: make([]Agent, 0),
+	return &Environment{Agents: make([]ShortAgent, 0),
 		Pipelines:            make([]ShortPipeline, 0),
 		EnvironmentVariables: make([]map[string]interface{}, 0)}
 }

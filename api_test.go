@@ -287,7 +287,120 @@ func TestClient_GetStageInstanceHystory(t *testing.T) {
 		t.Fail()
 	} else {
 		assert.NotNil(t, stages)
-		assert.Equal(t, len(*stages), 3)
+		assert.Equal(t, len(stages), 3)
+	}
+}
+
+func TestClient_GetAgent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_agent"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if agent, err := client.GetAgent("adb9540a-b954-4571-9d9b-2f330739d4da"); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.NotNil(t, agent)
+		assert.Equal(t, agent.Uuid, "adb9540a-b954-4571-9d9b-2f330739d4da")
+	}
+}
+
+func TestClient_GetAllAgents(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_agents"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if agents, err := client.GetAllAgents(); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.Equal(t, len(agents), 1)
+	}
+}
+
+func TestClient_GetAllUsers(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_users"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if users, err := client.GetAllUsers(); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.Equal(t, len(users), 1)
+	}
+}
+
+func TestClient_GetUser(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Compare(r.Method, "GET") != 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"method %s != GET"}`, r.Method))
+			return
+		}
+		data, err := ioutil.ReadFile(createPath("get_user"))
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprint(w, fmt.Sprintf(`{"Error":"%v"}`, err))
+			return
+		}
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, "", "")
+	if user, err := client.GetUser("jdoe"); err != nil {
+		t.Error(err)
+		t.Fail()
+	} else {
+		assert.Equal(t, user.LoginName, "jdoe")
 	}
 }
 

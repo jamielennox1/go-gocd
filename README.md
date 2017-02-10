@@ -17,18 +17,17 @@ func main() {
 
 ## API Endpoints Pending
 - Agents
-  - [ ] Get all Agents
-  - [ ] Get one Agent
-  - [ ] Update an Agent
-  - [ ] Disable Agent
-  - [ ] Delete an Agent
+  - [x] Get all Agents
+  - [x] Get one Agent
+  - [x] Update an Agent
+  - [x] Delete an Agent
   - [ ] Agent job run history
 - Users
-  - [ ] Get all Users
-  - [ ] Get one user
-  - [ ] Create a user
-  - [ ] Update a user
-  - [ ] Delete a user
+  - [x] Get all Users
+  - [x] Get one user
+  - [x] Create a user
+  - [x] Update a user
+  - [x] Delete a user
 - Materials
   - [ ] Get all Materials
   - [ ] Get material modifications
