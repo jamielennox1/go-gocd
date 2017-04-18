@@ -2,6 +2,7 @@ package gocd
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,15 +14,25 @@ import (
 const VERSION = "0.1.0"
 
 type Client struct {
-	host     string
-	login    string
-	password string
-	Etag     string
-	EtagEnv  string
+	host               string
+	login              string
+	password           string
+	Etag               string
+	EtagEnv            string
+	AllowUnverifiedSSL bool
+	httpClient         *http.Client
 }
 
-func New(host, login, password string) *Client {
-	return &Client{host: host, login: login, password: password}
+func New(host, login, password string, AllowUnverifiedSSL bool) *Client {
+	t := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: AllowUnverifiedSSL,
+		},
+	}
+	httpClient := &http.Client{
+		Transport: t,
+	}
+	return &Client{host: host, login: login, password: password, httpClient: httpClient}
 }
 
 func (p *Client) unmarshal(data io.ReadCloser, v interface{}) error {
